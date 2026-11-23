@@ -1,0 +1,7 @@
+# The built-in sample requires no key. Enable custom OpenAI generation locally:
+ENABLE_LIVE_GENERATION=false
+OPENAI_API_KEY=
+
+# For live generation on a deployed site protected by Cloudflare Access:
+LIVE_ACCESS_TEAM_DOMAIN=
+LIVE_ACCESS_AUDIENCE=
