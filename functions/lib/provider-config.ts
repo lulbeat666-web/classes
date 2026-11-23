@@ -7,6 +7,8 @@ export interface Env {
   LIVE_ACCESS_AUDIENCE?: string;
 }
 
+export type OpenAIKeyResolver = (env: Env, request: Request) => string | undefined | Promise<string | undefined>;
+
 export const openAIModel = {
   id: "gpt-4.1-mini-2025-04-14",
   label: "GPT-4.1 mini",
@@ -55,9 +57,13 @@ async function verifyAccess(request: Request, env: Env) {
   }
 }
 
-export async function getOpenAIKey(request: Request, env: Env) {
-  const key = env.OPENAI_API_KEY?.trim();
-  if (!key || env.ENABLE_LIVE_GENERATION !== "true") return undefined;
+export function getConfiguredOpenAIKey(env: Env) {
+  return env.ENABLE_LIVE_GENERATION === "true" ? env.OPENAI_API_KEY?.trim() || undefined : undefined;
+}
+
+export async function getOpenAIKey(env: Env, request: Request) {
+  const key = getConfiguredOpenAIKey(env);
+  if (!key) return undefined;
 
   const { hostname } = new URL(request.url);
   if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") return key;

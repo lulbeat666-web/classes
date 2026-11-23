@@ -12,5 +12,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "functions", "tests", "vite.config.ts"]
+  "include": ["src", "functions", "netlify", "tests", "vite.config.ts"]
 }

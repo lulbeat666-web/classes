@@ -55,6 +55,13 @@ XDG_CONFIG_HOME="$PWD/.wrangler/config" npm run dev:pages
 - 생성 요청의 본문 한도는 16 KiB입니다. OpenAI 호출에는 호출당 응답 시간과 출력 길이 제한을 적용합니다.
 - 활동의 품질 점수는 AI의 휴리스틱 평가입니다. 수업 운영의 적합성은 활동 세부 내용과 학급 상황을 함께 보고 판단합니다.
 
+## Netlify에 배포
+
+1. 기존 Netlify 프로젝트의 **Project configuration → Developer settings → Continuous deployment → Repository**에서 GitHub 저장소를 연결하고 운영 브랜치를 `main`으로 지정합니다. Git 연동으로 빌드하면 `netlify.toml`의 설정에 따라 `dist`와 함께 `/api/providers`, `/api/generate-activities`가 배포됩니다. [Netlify 저장소 연결 안내](https://docs.netlify.com/build/git-workflows/repo-permissions-linking/)
+2. **Project configuration → Environment variables**에서 운영 환경의 `OPENAI_API_KEY`를 비밀값으로 등록합니다. 범위를 선택할 수 있다면 **Functions**를 선택합니다. `ENABLE_LIVE_GENERATION=false`를 설정하면 실시간 생성을 끌 수 있습니다. [Netlify Functions 환경변수 안내](https://docs.netlify.com/build/functions/environment-variables/)
+3. **Deploys**에서 해당 Git 커밋의 운영 배포가 완료되면 기존 사이트 주소를 엽니다. 실시간 생성은 비공개 프로젝트 또는 팀 로그인으로 보호한 운영 배포에 Netlify 팀 계정으로 로그인한 사용자에게 제공됩니다. 함수는 Netlify가 검증한 로그인 정보를 사용해 호출 권한을 확인합니다. [Netlify 프로젝트 공개 범위](https://docs.netlify.com/manage/security/secure-access-to-sites/project-visibility/) [Netlify Functions 로그인 정보](https://docs.netlify.com/build/functions/api/#user)
+4. 앱에서 **OpenAI 연결됨**이 표시되면 직접 입력한 학습목표로 활동을 생성해 확인합니다.
+
 ## Cloudflare Pages에 배포
 
 1. GitHub에 프로젝트 소스를 올립니다. `functions/`와 `wrangler.jsonc`를 프로젝트 루트에 포함합니다.
@@ -104,7 +111,7 @@ JS
 ## 연결 문제 확인
 
 - **로그인 세션 안내**가 표시되면 배포된 앱을 새 탭에서 열어 로그인한 뒤 설정에서 **연결 다시 확인**을 누릅니다.
-- **생성 API를 찾을 수 없음**이 표시되면 앱을 정적 파일로만 제공하는 주소인지 확인합니다. 로컬에서는 Vite와 함께 Wrangler Pages를 실행하고, 배포에서는 Pages Functions가 적용된 주소를 사용합니다.
+- **생성 API를 찾을 수 없음**이 표시되면 서버 함수가 배포에 포함됐는지 확인합니다. Netlify에서 `dist`만 업로드했다면 저장소를 연결하고 Functions를 포함해 다시 배포합니다. 로컬에서는 Vite와 함께 Wrangler Pages를 실행합니다.
 - 설정에 **예시 모드**가 표시되면 분수 나눗셈 예시를 볼 수 있습니다. 새 학습목표로 생성하려면 위의 OpenAI 활성화와 접근 설정을 완료합니다.
 
 ## 프로젝트 구조
@@ -114,9 +121,11 @@ src/              React 화면, 스타일, 브라우저 설정 저장
 src/shared/       입력·활동 스키마, 놀이 메커니즘, 공통 예시 입력
 functions/api/    Cloudflare Pages의 제공자 조회·활동 생성 엔드포인트
 functions/lib/    프롬프트, OpenAI 호출, 접근 제어, 검증, 고정 예시
+netlify/          Netlify Functions 경로와 팀 로그인 확인
 public/           정적 이미지
 tests/           모의 API 테스트와 Wrangler Pages 통합 테스트
 wrangler.jsonc    Pages 설정
+netlify.toml      Netlify 빌드와 함수 설정
 .dev.vars.example 로컬 환경변수 예시
 ```
 

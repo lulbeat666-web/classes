@@ -7,7 +7,7 @@ import { demoActivities } from "../../src/shared/demo-activities";
 import { isDemoLesson } from "../../src/shared/demo-lesson";
 import { ApiError, errorResponse, json, readJson, verifyRequestOrigin } from "../lib/http";
 import { requestOpenAI, type OpenAIOptions } from "../lib/openai";
-import { getOpenAIKey, openAIModel, type Env } from "../lib/provider-config";
+import { getOpenAIKey, openAIModel, type Env, type OpenAIKeyResolver } from "../lib/provider-config";
 import { makeActivityPrompt } from "../lib/prompts";
 import { ActivityValidationError, validateActivities } from "../lib/validation";
 
@@ -33,7 +33,10 @@ async function generateActivities(
   throw new ApiError(502, "INVALID_AI_RESPONSE", "AI 응답이 활동 조건 검증을 통과하지 못했습니다. 다시 시도해 주세요.");
 }
 
-export function createGenerateHandler(options: OpenAIOptions = {}) {
+export function createGenerateHandler(
+  options: OpenAIOptions = {},
+  resolveOpenAIKey: OpenAIKeyResolver = getOpenAIKey,
+) {
   return async ({ request, env }: { request: Request; env: Env }) => {
     try {
       verifyRequestOrigin(request);
@@ -62,7 +65,7 @@ export function createGenerateHandler(options: OpenAIOptions = {}) {
         throw new ApiError(400, "UNSUPPORTED_MODEL", "이 앱에서 사용할 수 있는 OpenAI 모델을 선택해 주세요.");
       }
 
-      const key = await getOpenAIKey(request, env);
+      const key = await resolveOpenAIKey(env, request);
       if (!key) {
         throw new ApiError(503, "OPENAI_UNAVAILABLE", "OpenAI를 사용할 수 없습니다. 서버의 API 키, 생성 허용 및 접근 설정을 확인해 주세요.");
       }
