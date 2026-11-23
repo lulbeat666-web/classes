@@ -19,7 +19,9 @@ export class GenerationApiError extends Error {
 async function requestJson(path: string, options: RequestInit, fetcher: typeof fetch): Promise<unknown> {
   let response: Response
   try {
-    response = await fetcher(path, { ...options, redirect: 'manual' })
+    const headers = new Headers(options.headers)
+    headers.set('Accept', 'application/json')
+    response = await fetcher(path, { ...options, headers, redirect: 'manual' })
   } catch {
     throw new GenerationApiError('network', '서버에 연결하지 못했어요. 네트워크 상태를 확인하고 다시 시도해 주세요.')
   }
@@ -54,6 +56,16 @@ async function requestJson(path: string, options: RequestInit, fetcher: typeof f
       : '활동 생성 요청을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.')
   }
   return body
+}
+
+export function parseProviderBootstrap(value: string | null | undefined): ProviderStatus | undefined {
+  if (!value) return undefined
+  try {
+    const parsed = providerStatusSchema.safeParse(JSON.parse(value))
+    return parsed.success ? parsed.data : undefined
+  } catch {
+    return undefined
+  }
 }
 
 export async function getProviderStatus(signal?: AbortSignal, fetcher: typeof fetch = fetch): Promise<ProviderStatus> {

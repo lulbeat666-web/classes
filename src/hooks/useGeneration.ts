@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { generateActivities, GenerationApiError, getProviderStatus } from '../generation-client'
+import { generateActivities, GenerationApiError, getProviderStatus, parseProviderBootstrap } from '../generation-client'
 import type { GenerationResponse, LessonInput, ProviderStatus } from '../shared/contracts'
 
 type Generated = GenerationResponse & { lesson: LessonInput }
@@ -14,7 +14,12 @@ function apiIssue(error: unknown): GenerationApiError {
 }
 
 export function useGeneration() {
-  const [providerCheck, setProviderCheck] = useState<ProviderCheck>({ state: 'checking' })
+  const [initialStatus] = useState(() =>
+    parseProviderBootstrap(document.getElementById('creative-class-provider-status')?.textContent),
+  )
+  const [providerCheck, setProviderCheck] = useState<ProviderCheck>(() =>
+    initialStatus ? { state: 'ready', status: initialStatus } : { state: 'checking' },
+  )
   const [checkAttempt, setCheckAttempt] = useState(0)
   const [result, setResult] = useState<Generated>()
   const [error, setError] = useState('')
@@ -22,6 +27,8 @@ export function useGeneration() {
   const lock = useRef(false)
 
   useEffect(() => {
+    if (initialStatus && checkAttempt === 0) return
+
     let active = true
     const controller = new AbortController()
     const timer = window.setTimeout(() => controller.abort(), 8_000)
@@ -41,7 +48,7 @@ export function useGeneration() {
       window.clearTimeout(timer)
       controller.abort()
     }
-  }, [checkAttempt])
+  }, [checkAttempt, initialStatus])
 
   function retryProviderCheck() {
     setError('')

@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { generateActivities, GenerationApiError, getProviderStatus } from '../src/generation-client';
+import {
+  generateActivities,
+  GenerationApiError,
+  getProviderStatus,
+  parseProviderBootstrap,
+} from '../src/generation-client';
 import { generationResponseSchema, type ProviderStatus } from '../src/shared/contracts';
 import { demoLesson } from '../src/shared/demo-lesson';
 
@@ -27,6 +32,18 @@ test('an available site in demo mode is distinct from a failed provider status c
     return Response.json(demoStatus);
   });
   assert.deepEqual(status, demoStatus);
+});
+
+test('embedded provider status is used only when it satisfies the shared schema', () => {
+  const liveStatus: ProviderStatus = {
+    mode: 'openai',
+    providers: [{ id: 'openai', label: 'OpenAI', available: true, models: [model] }],
+  };
+  assert.deepEqual(parseProviderBootstrap(JSON.stringify(demoStatus)), demoStatus);
+  assert.deepEqual(parseProviderBootstrap(JSON.stringify(liveStatus)), liveStatus);
+  for (const absent of [null, undefined, '', '{', JSON.stringify({ ...demoStatus, mode: 'unknown' })]) {
+    assert.equal(parseProviderBootstrap(absent), undefined);
+  }
 });
 
 test('the fixed demo returns three validated 20-minute activities without a server', async () => {
