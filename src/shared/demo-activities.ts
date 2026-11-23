@@ -1,5 +1,5 @@
-import type { RecommendedActivity } from "../../src/shared/contracts";
-import { demoLesson } from "../../src/shared/demo-lesson";
+import type { GenerationResponse, RecommendedActivity } from "./contracts";
+import { demoLesson } from "./demo-lesson";
 
 export const demoActivities: RecommendedActivity[] = [
   {
@@ -248,3 +248,8 @@ export const demoActivities: RecommendedActivity[] = [
     ],
   },
 ];
+
+export const demoGeneration = {
+  mode: "demo",
+  activities: demoActivities,
+} satisfies GenerationResponse;

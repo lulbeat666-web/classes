@@ -7,7 +7,7 @@ import { Results } from './components/Results'
 import { useLesson } from './hooks/useLesson'
 import { useGeneration } from './hooks/useGeneration'
 import { lessonInputSchema } from './shared/contracts'
-import { demoLesson } from './shared/demo-lesson'
+import { demoLesson, isDemoLesson } from './shared/demo-lesson'
 import type { LessonInput } from './shared/contracts'
 
 function scrollToResults() {
@@ -16,13 +16,18 @@ function scrollToResults() {
 
 export function App() {
   const { lesson, setLesson, resetFilters } = useLesson()
-  const { status, providerError, result, error, setError, pending, generate } = useGeneration()
+  const { providerCheck, retryProviderCheck, result, error, setError, pending, generate } = useGeneration()
   const optionsDialog = useRef<HTMLDialogElement>(null)
   const [notice, setNotice] = useState('')
   const [selectedModel, setSelectedModel] = useState('')
-  const provider = status?.providers[0]
-  const live = status?.mode === 'openai'
-  const statusLabel = providerError ? '연결 확인 필요' : live ? 'OpenAI 연결됨' : status ? '예시 모드' : '연결 확인 중'
+  const status = providerCheck.state === 'ready' ? providerCheck.status : undefined
+  const providerIssue = providerCheck.state === 'failed' ? providerCheck.issue : undefined
+  const provider = status?.providers.find(({ available }) => available)
+  const live = status?.mode === 'openai' && Boolean(provider)
+  const statusLabel = live ? 'OpenAI 연결됨' : providerCheck.state === 'checking' ? '연결 확인 중' : '예시 모드'
+  const settingsMessage = providerIssue?.message ?? (providerCheck.state === 'checking'
+    ? '서버에 연결하는 중에도 분수 나눗셈 예시 활동을 볼 수 있어요.'
+    : '새 학습목표로 추천을 받으려면 운영자가 서버에서 OpenAI를 연결해야 해요.')
 
   function updateLesson(next: LessonInput) {
     setLesson(next)
@@ -49,7 +54,16 @@ export function App() {
       return
     }
 
-    const mode = live && !sample ? 'openai' : 'demo'
+    const useDemo = sample || (!live && isDemoLesson(parsed.data))
+    if (!live && !useDemo) {
+      setError(providerCheck.state === 'checking'
+        ? '연결 가능 여부를 확인하고 있어요. 잠시 후 다시 시도해 주세요.'
+        : providerIssue?.message ?? settingsMessage)
+      scrollToResults()
+      return
+    }
+
+    const mode = useDemo ? 'demo' : 'openai'
     const requestModel = mode === 'openai' ? selectedModel || provider?.models[0]?.id : undefined
     const request = generate(parsed.data, mode, requestModel)
     scrollToResults()
@@ -66,7 +80,7 @@ export function App() {
           </a>
           <div className="toolbar-actions">
             <button type="button" className="mode-pill" onClick={openSettings}>
-              <span className={providerError ? 'status-dot status-alert' : 'status-dot'} /> {statusLabel}
+              <span className={providerIssue ? 'status-dot status-alert' : 'status-dot'} /> {statusLabel}
             </button>
             <button type="button" className="settings-button" aria-label="설정" onClick={openSettings}><Settings2 size={19} /></button>
           </div>
@@ -98,7 +112,11 @@ export function App() {
               <div className="api-error" role="alert">
                 <CircleAlert size={19} />
                 <p>{error}</p>
-                {!live && <button type="button" onClick={() => void handleGenerate(true)}>예시 결과 보기</button>}
+                {providerIssue?.reason === 'session'
+                  ? <a href="./" target="_blank" rel="noopener noreferrer">앱 새 탭에서 열기</a>
+                  : providerIssue
+                    ? <button type="button" onClick={retryProviderCheck}>연결 다시 확인</button>
+                    : !live && <button type="button" onClick={() => void handleGenerate(true)}>예시 결과 보기</button>}
               </div>
             )}
             <Results result={result} pending={pending} onExample={() => void handleGenerate(true)} />
@@ -121,7 +139,7 @@ export function App() {
           </div>
           <div className="settings-section">
             <h3>활동 생성</h3>
-            <p className="settings-status"><span className={providerError ? 'status-dot status-alert' : 'status-dot'} /> {statusLabel}</p>
+            <p className="settings-status"><span className={providerIssue ? 'status-dot status-alert' : 'status-dot'} /> {statusLabel}</p>
             {live && provider ? (
               <label className="field">
                 <span>{provider.label} 모델</span>
@@ -130,14 +148,22 @@ export function App() {
                 </select>
               </label>
             ) : (
-              <p>{providerError
-                ? '활동 생성 서버에 연결하지 못했어요. 연결 상태를 확인해 주세요.'
-                : '분수 나눗셈 예시 활동을 둘러볼 수 있어요. 새 학습목표로 추천을 받으려면 운영자가 서버에서 OpenAI를 연결해야 해요.'}</p>
+              <p>{settingsMessage}</p>
             )}
-            <button type="button" className="secondary-button" disabled={pending} onClick={() => {
-              optionsDialog.current?.close()
-              void handleGenerate(true)
-            }}><FlaskConical size={16} /> 예시 결과 보기</button>
+            <div className="settings-actions">
+              {providerIssue?.reason === 'session' && (
+                <a className="secondary-button" href="./" target="_blank" rel="noopener noreferrer">앱 새 탭에서 열기</a>
+              )}
+              {providerIssue && (
+                <button type="button" className="secondary-button" onClick={retryProviderCheck}>
+                  <RotateCcw size={16} /> 연결 다시 확인
+                </button>
+              )}
+              <button type="button" className="secondary-button" disabled={pending} onClick={() => {
+                optionsDialog.current?.close()
+                void handleGenerate(true)
+              }}><FlaskConical size={16} /> 예시 결과 보기</button>
+            </div>
           </div>
           <div className="settings-section">
             <h3>저장된 필터</h3>

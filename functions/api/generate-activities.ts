@@ -1,22 +1,15 @@
 import {
   generationRequestSchema,
-  lessonInputSchema,
   type GenerationResponse,
   type LessonInput,
 } from "../../src/shared/contracts";
-import { demoLesson } from "../../src/shared/demo-lesson";
-import { demoActivities } from "../lib/demo-activities";
+import { demoActivities } from "../../src/shared/demo-activities";
+import { isDemoLesson } from "../../src/shared/demo-lesson";
 import { ApiError, errorResponse, json, readJson, verifyRequestOrigin } from "../lib/http";
 import { requestOpenAI, type OpenAIOptions } from "../lib/openai";
 import { getOpenAIKey, openAIModel, type Env } from "../lib/provider-config";
 import { makeActivityPrompt } from "../lib/prompts";
 import { ActivityValidationError, validateActivities } from "../lib/validation";
-
-function normalizedLesson(lesson: LessonInput) {
-  return JSON.stringify(lessonInputSchema.parse({ ...lesson, mechanisms: [...lesson.mechanisms].sort() }));
-}
-
-const demoLessonKey = normalizedLesson(demoLesson);
 
 async function generateActivities(
   lesson: LessonInput,
@@ -55,7 +48,7 @@ export function createGenerateHandler(options: OpenAIOptions = {}) {
 
       const { lesson, mode, model } = payload.data;
       if (mode === "demo") {
-        if (normalizedLesson(lesson) !== demoLessonKey) {
+        if (!isDemoLesson(lesson)) {
           throw new ApiError(400, "DEMO_INPUT_MISMATCH", "예시 모드는 정해진 분수 나눗셈 수업만 보여 줍니다. 예시 수업을 불러와 주세요.");
         }
         const response: GenerationResponse = {

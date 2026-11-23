@@ -1,4 +1,4 @@
-import type { LessonInput } from "./contracts";
+import { lessonInputSchema, type LessonInput } from "./contracts";
 
 export const demoLesson: LessonInput = {
   grade: 5,
@@ -12,3 +12,14 @@ export const demoLesson: LessonInput = {
   groupSize: 28,
   mechanisms: ["random", "movement", "craft", "exchange"],
 };
+
+function normalizedLessonKey(lesson: LessonInput) {
+  return JSON.stringify({ ...lesson, mechanisms: [...lesson.mechanisms].sort() });
+}
+
+const demoLessonKey = normalizedLessonKey(lessonInputSchema.parse(demoLesson));
+
+export function isDemoLesson(lesson: LessonInput): boolean {
+  const parsed = lessonInputSchema.safeParse(lesson);
+  return parsed.success && normalizedLessonKey(parsed.data) === demoLessonKey;
+}

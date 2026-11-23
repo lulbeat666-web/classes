@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { createGenerateHandler } from '../functions/api/generate-activities';
-import { demoActivities } from '../functions/lib/demo-activities';
+import { demoActivities, demoGeneration } from '../src/shared/demo-activities';
 import { validateActivities } from '../functions/lib/validation';
-import { demoLesson } from '../src/shared/demo-lesson';
+import { demoLesson, isDemoLesson } from '../src/shared/demo-lesson';
 
 const publicModel = 'gpt-4.1-mini-2025-04-14';
 const liveEnv = { ENABLE_LIVE_GENERATION: 'true', OPENAI_API_KEY: 'test-only-key' };
@@ -37,8 +37,8 @@ async function assertApiError(response: Response, status: number, code: string) 
 }
 
 test('the fixture uses three distinct activities and meets the §9 contract', () => {
-  const result = { activities: demoActivities };
-  assert.doesNotThrow(() => validateActivities(result, demoLesson));
+  assert.equal(demoGeneration.mode, 'demo');
+  assert.doesNotThrow(() => validateActivities({ activities: demoGeneration.activities }, demoLesson));
   assert.equal(demoActivities.length, 3);
   assert.equal(new Set(demoActivities.map((activity) => activity.title)).size, 3);
   for (const activity of demoActivities) {
@@ -48,6 +48,19 @@ test('the fixture uses three distinct activities and meets the §9 contract', ()
     assert.ok(activity.preparationMinutes <= demoLesson.preparationMinutes);
     assert.deepEqual(activity.steps.map((step) => step.order), activity.steps.map((_step, index) => index + 1));
   }
+});
+
+test('only the canonical demo lesson matches after input normalization', () => {
+  assert.ok(isDemoLesson(demoLesson));
+  assert.ok(isDemoLesson({
+    ...demoLesson,
+    objective: ` ${demoLesson.objective} \n`,
+    textbookContent: ` ${demoLesson.textbookContent} \n`,
+    mechanisms: [...demoLesson.mechanisms].reverse(),
+  }));
+  assert.equal(isDemoLesson({ ...demoLesson, durationMinutes: 25 }), false);
+  assert.equal(isDemoLesson({ ...demoLesson, durationMinutes: 12 }), false);
+  assert.equal(isDemoLesson({ ...demoLesson, objective: ' ' }), false);
 });
 
 test('semantic validation rejects inconsistent time, duplicate activities, preparation time and scores', () => {

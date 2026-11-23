@@ -26,7 +26,7 @@ npm run build
 npm run dev:pages
 ```
 
-터미널에 `Ready on http://localhost:8788`이 표시되면 Wrangler를 실행한 컴퓨터의 브라우저에서 해당 주소를 엽니다. 터미널을 계속 실행해 두세요. Codex Cloud에서 서버를 시작한 경우에는 Codex의 공유 데스크톱에서 접속할 수 있습니다. 다른 컴퓨터에서 사용하려면 아래 Cloudflare Pages 배포 절차를 따릅니다. Wrangler가 빌드 결과와 `/api/*`의 Pages Functions를 함께 실행합니다. 예시 불러오기로 분수 나눗셈 조건을 입력한 후 활동을 생성하면 서버에 포함된 고정 예시 3개를 볼 수 있습니다. 예시 내용에 조건을 변경한 요청은 실제 생성 설정이 필요합니다. [Cloudflare Pages 로컬 개발 문서](https://developers.cloudflare.com/pages/functions/local-development/)
+터미널에 `Ready on http://localhost:8788`이 표시되면 Wrangler를 실행한 컴퓨터의 브라우저에서 해당 주소를 엽니다. 터미널을 계속 실행해 두세요. Codex Cloud에서 서버를 시작한 경우에는 Codex의 공유 데스크톱에서 접속할 수 있습니다. 다른 컴퓨터에서 사용하려면 아래 Cloudflare Pages 배포 절차를 따릅니다. Wrangler가 빌드 결과와 `/api/*`의 Pages Functions를 함께 실행합니다. 예시 불러오기로 분수 나눗셈 조건을 입력한 후 활동을 생성하면 앱에 포함된 고정 예시 3개를 볼 수 있습니다. 예시 결과 보기는 화면이 로드된 상태라면 서버 연결과 API 키 없이도 작동합니다. 예시 내용에 조건을 변경한 요청은 실제 생성 설정이 필요합니다. [Cloudflare Pages 로컬 개발 문서](https://developers.cloudflare.com/pages/functions/local-development/)
 
 프런트엔드를 편집할 때는 Wrangler를 유지한 상태로 다른 터미널에서 `npm run dev`를 실행합니다. Vite 주소는 기본 `http://localhost:5173`이며 `/api` 호출을 Wrangler의 `8788` 포트로 전달합니다.
 
@@ -100,6 +100,12 @@ for (const activity of data.activities) {
 }
 JS
 ```
+
+## 연결 문제 확인
+
+- **로그인 세션 안내**가 표시되면 배포된 앱을 새 탭에서 열어 로그인한 뒤 설정에서 **연결 다시 확인**을 누릅니다.
+- **생성 API를 찾을 수 없음**이 표시되면 앱을 정적 파일로만 제공하는 주소인지 확인합니다. 로컬에서는 Vite와 함께 Wrangler Pages를 실행하고, 배포에서는 Pages Functions가 적용된 주소를 사용합니다.
+- 설정에 **예시 모드**가 표시되면 분수 나눗셈 예시를 볼 수 있습니다. 새 학습목표로 생성하려면 위의 OpenAI 활성화와 접근 설정을 완료합니다.
 
 ## 프로젝트 구조
 
